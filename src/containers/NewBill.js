@@ -22,11 +22,33 @@ export default class NewBill {
     this.billId = null;
     new Logout({ document, localStorage, onNavigate });
   }
-  handleChangeFile = (e) => {
+  handleChangeFile = async (e) => {
     e.preventDefault();
-    const file = this.document.querySelector(`input[data-testid="file"]`)
-      .files[0]; // Récupérer le fichier à partir de l'événement
+    const fileInput = this.document.querySelector(`input[data-testid="file"]`);
+    const file = fileInput.files[0];
     const fileName = file.name;
+
+    // Vérifier si le fichier est une image avec une extension valide
+    const validExtensions = ["jpg", "jpeg", "png"];
+    const extension = fileName.split(".").pop().toLowerCase();
+    if (!validExtensions.includes(extension)) {
+      // Afficher un message d'erreur
+      const errorMessage = document.createElement("div");
+      errorMessage.textContent =
+        "Le fichier doit être au format JPG, JPEG ou PNG.";
+      errorMessage.style.color = "red";
+      errorMessage.setAttribute("data-testid", "error-message");
+      fileInput.parentNode.appendChild(errorMessage);
+      return;
+    }
+
+    // Supprimer le message d'erreur s'il existe
+    const errorMessage = fileInput.parentNode.querySelector(
+      '[data-testid="error-message"]'
+    );
+    if (errorMessage) {
+      errorMessage.remove();
+    }
 
     // Utiliser FormData pour envoyer le fichier au serveur
     const formData = new FormData();
@@ -35,21 +57,22 @@ export default class NewBill {
     formData.append("email", email);
 
     // Appeler la méthode create du store pour téléverser le fichier
-    this.store
-      .bills()
-      .create({
+    try {
+      // Call the create method of the store to upload the file
+      const { fileUrl, key } = await this.store.bills().create({
         data: formData,
         headers: {
           noContentType: true,
         },
-      })
-      .then(({ fileUrl, key }) => {
-        console.log(fileUrl);
-        this.billId = key;
-        this.fileUrl = fileUrl;
-        this.fileName = fileName;
-      })
-      .catch((error) => console.error(error));
+      });
+  
+      // Update fileUrl and fileName
+      this.billId = key;
+      this.fileUrl = fileUrl;
+      this.fileName = fileName;
+    } catch (error) {
+      console.error(error);
+    }
   };
   handleSubmit = async (e) => {
     e.preventDefault();
@@ -99,9 +122,13 @@ export default class NewBill {
         .then(() => {
           this.onNavigate(ROUTES_PATH["Bills"]);
         })
-        .catch((error) => console.error(error));
+        .catch((error) => {
+          console.error("Error updating bill:", error);
+          throw new Error("Failed to update bill"); // Rejeter la promesse avec un message d'erreur
+        });
     } else {
       console.error("Store is not defined or does not have bills property.");
+      throw new Error("Failed to update bill");
       return Promise.reject(
         "Store is not defined or does not have bills property."
       );
