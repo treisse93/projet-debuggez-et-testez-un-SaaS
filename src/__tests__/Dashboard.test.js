@@ -306,11 +306,15 @@ describe("Given I am connected as an Admin", () => {
         document.body.append(root);
         router();
         window.onNavigate(ROUTES_PATH.Dashboard);
+        // attendre que le contenu soit loader
         await waitFor(() => screen.getByText("Validations"));
+        // vérifier que les en attente soient affichés
         const contentPending = screen.getByText("En attente (1)");
         expect(contentPending).toBeTruthy();
+        // vérifier que les refusés soient affichés
         const contentRefused = screen.getByText("Refusé (2)");
         expect(contentRefused).toBeTruthy();
+        // vérifie que les notes de frais soient affichées
         expect(screen.getByTestId("big-billed-icon")).toBeTruthy();
       });
       describe("When an error occurs on API", () => {

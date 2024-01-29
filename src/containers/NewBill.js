@@ -26,7 +26,13 @@ export default class NewBill {
     e.preventDefault();
     const fileInput = this.document.querySelector(`input[data-testid="file"]`);
     const file = fileInput.files[0];
-    const fileName = file.name;
+
+    // Vérifier si un fichier a été sélectionné
+    if (!file) {
+      return; // Sortir de la fonction si aucun fichier n'est sélectionné
+    }
+
+    const fileName = file.name; // Récupérer le nom du fichier
 
     // Vérifier si le fichier est une image avec une extension valide
     const validExtensions = ["jpg", "jpeg", "png"];
@@ -65,13 +71,14 @@ export default class NewBill {
           noContentType: true,
         },
       });
-  
-      // Update fileUrl and fileName
+
+      // Mettre à jour fileUrl et fileName après un téléversement réussi
+
       this.billId = key;
       this.fileUrl = fileUrl;
       this.fileName = fileName;
     } catch (error) {
-      console.error(error);
+      console.error(error); // Mettre à jour le nom du fichier
     }
   };
   handleSubmit = async (e) => {
@@ -123,7 +130,6 @@ export default class NewBill {
           this.onNavigate(ROUTES_PATH["Bills"]);
         })
         .catch((error) => {
-          console.error("Error updating bill:", error);
           throw new Error("Failed to update bill"); // Rejeter la promesse avec un message d'erreur
         });
     } else {

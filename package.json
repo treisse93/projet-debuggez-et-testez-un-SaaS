@@ -19,7 +19,7 @@
       "!**/fixtures/**",
       "!**/lcov-report/**"
     ],
-    "testEnvironment": "node"
+    "testEnvironment": "jsdom"
   },
   "babel": {
     "presets": [

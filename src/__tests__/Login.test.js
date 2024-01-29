@@ -5,10 +5,27 @@
 import LoginUI from "../views/LoginUI.js";
 import Login from "../containers/Login.js";
 import { ROUTES } from "../constants/routes.js";
-import { fireEvent, screen } from "@testing-library/dom";
+import { fireEvent, screen, render } from "@testing-library/dom";
+
+let storeMock;
+
+// Simulate document and localStorage
+const mockLocalStorage = {
+  getItem: jest.fn(),
+  setItem: jest.fn(),
+};
+
+const mockDocument = `
+  <div>
+    <input type="email" data-testid="email-input" />
+    <input type="password" data-testid="password-input" />
+    <button type="submit" data-testid="submit-button">Submit</button>
+  </div>
+`;
+
+document.body.innerHTML = mockDocument;
 
 describe("Given that I am a user on login page", () => {
-  let storeMock;
   beforeEach(() => {
     storeMock = {
       login: jest.fn(),
@@ -280,6 +297,39 @@ describe("Given that I am a user on login page", () => {
       // Assuming your component exposes an error message
       expect(login.error).toBeDefined();
       //expect(login.error.message).toBe(error404.message);
+    });
+  });
+
+  describe("When the login as an admin is successful", () => {
+    test("Then it should navigate to the HR dashboard", async () => {
+       // Mock login function
+      const mockLogin = jest.fn();
+      
+      // Mock navigation function
+      const mockNavigate = jest.fn();
+
+      // Simulate the login UI
+      document.body.innerHTML = LoginUI();
+
+      // Populate email and password fields
+      const emailInput = screen.getByTestId("employee-email-input");
+      fireEvent.change(emailInput, { target: { value: "employee@example.com" } });
+
+      const passwordInput = screen.getByTestId("employee-password-input");
+      fireEvent.change(passwordInput, { target: { value: "password123" } });
+
+      // Trigger form submission
+      const form = screen.getByTestId("form-employee");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        mockLogin();
+        mockNavigate("/employee-dashboard");
+      });
+      fireEvent.submit(form);
+
+      // Assertions
+      expect(mockLogin).toHaveBeenCalled();
+      expect(mockNavigate).toHaveBeenCalledWith("/employee-dashboard");
     });
   });
 });

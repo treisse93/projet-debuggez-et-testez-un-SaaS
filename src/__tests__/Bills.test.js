@@ -18,6 +18,8 @@ let mockStore = {
   })),
 };
 
+const onNavigateMock = jest.fn();
+
 // Mock pour jQuery et modal
 jest.mock("jquery", () => {
   const mJQuery = {
@@ -77,7 +79,12 @@ describe("Given I am connected as an employee", () => {
       expect(dates).toEqual(datesSorted);
     });
     test("Then getBills should call the store's list method", async () => {
-      document.body.innerHTML = BillsUI({ data: bills });
+      const mockList = jest.fn(() => Promise.resolve(bills));
+      const mockStore = {
+        bills: jest.fn(() => ({
+          list: mockList,
+        })),
+      };
       const billsInstance = new Bills({
         document: document,
         onNavigate: jest.fn(),
@@ -85,13 +92,14 @@ describe("Given I am connected as an employee", () => {
         localStorage: localStorageMock,
       });
 
-      // Utilisez un mock de la méthode list pour simuler le comportement
-      mockStore.bills().list.mockResolvedValueOnce(bills);
+      // Appel de la méthode getBills
+      const result = await billsInstance.getBills();
 
-      await billsInstance.getBills();
+      // Vérification que la méthode list du store a bien été appelée
+      expect(mockList).toHaveBeenCalled();
 
-      // Vérifiez que la méthode list du store a été appelée
-      //expect(mockStore.bills().list).toHaveBeenCalled();
+      // Vérification que la méthode getBills retourne un tableau de factures
+      expect(Array.isArray(result)).toBe(true);
     });
     test("Then display an error message if getBills fails", async () => {
       document.body.innerHTML = BillsUI({ error: "Error fetching bills" });
@@ -182,12 +190,58 @@ describe("Given I am connected as an employee", () => {
         store: mockStore,
         localStorage: localStorageMock,
       });
-    
+
       const newBillButton = screen.getByTestId("btn-new-bill");
       expect(newBillButton).toBeInTheDocument();
-    
+
       userEvent.click(newBillButton);
     });
-    
+  });
+});
+describe("Bills container", () => {
+  // Testez la méthode handleClickNewBill
+  describe("handleClickNewBill", () => {
+    test("Should navigate to the New Bill page", () => {
+      // Créez une instance de la classe Bills
+      const billsInstance = new Bills({
+        document: document,
+        onNavigate: onNavigateMock,
+        store: null, // Mettez un mock pour le store si nécessaire
+        localStorage: null, // Mettez un mock pour localStorage si nécessaire
+      });
+
+      // Appelez la méthode handleClickNewBill
+      billsInstance.handleClickNewBill();
+
+      // Vérifiez que la méthode onNavigate a été appelée avec le bon chemin
+      expect(onNavigateMock).toHaveBeenCalledWith(ROUTES_PATH["NewBill"]);
+    });
+  });
+  describe("getBills", () => {
+    test("Should return an array of bills", async () => {
+      // Mock de la méthode list pour retourner une liste de factures
+      const mockList = jest.fn(() => Promise.resolve(bills));
+
+      // Mock du store
+      const mockStore = {
+        bills: jest.fn(() => ({
+          list: mockList,
+        })),
+      };
+
+      // Création d'une instance de Bills avec le mockStore
+      const billsInstance = new Bills({
+        document: document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: localStorageMock,
+      });
+
+      // Appel de la méthode getBills
+      await billsInstance.getBills();
+
+      // Vérification que la méthode list du store a bien été appelée
+      expect(mockList).toHaveBeenCalled();
+    });
   });
 });
