@@ -185,16 +185,16 @@ describe("Given that I am a user on login page", () => {
     });
     test("When I do not fill fields and I click on admin button Login In", () => {
       document.body.innerHTML = LoginUI();
-  
+
       const inputEmailAdmin = screen.getByTestId("admin-email-input");
       expect(inputEmailAdmin.value).toBe("");
-  
+
       const inputPasswordAdmin = screen.getByTestId("admin-password-input");
       expect(inputPasswordAdmin.value).toBe("");
-  
+
       const form = screen.getByTestId("form-admin");
       const handleSubmit = jest.fn((e) => e.preventDefault());
-  
+
       form.addEventListener("submit", handleSubmit);
       fireEvent.submit(form);
       expect(screen.getByTestId("form-admin")).toBeTruthy();
@@ -340,22 +340,22 @@ describe("Given that I am a user on login page", () => {
     test("Should navigate to the employee dashboard upon successful login", async () => {
       // Mock login function
       const mockLogin = jest.fn();
-    
+
       // Mock navigation function
       const mockNavigate = jest.fn();
-    
+
       // Simulate the login UI
       document.body.innerHTML = LoginUI();
-    
+
       // Populate email and password fields
       const emailInput = screen.getByTestId("admin-email-input");
       fireEvent.change(emailInput, {
         target: { value: "admin@example.com" },
       });
-    
+
       const passwordInput = screen.getByTestId("admin-password-input");
       fireEvent.change(passwordInput, { target: { value: "admin123" } });
-    
+
       // Trigger form submission
       const form = screen.getByTestId("form-admin");
       form.addEventListener("submit", (e) => {
@@ -364,13 +364,13 @@ describe("Given that I am a user on login page", () => {
         mockNavigate("/employee-dashboard");
       });
       fireEvent.submit(form);
-    
+
       // Assertions
       expect(mockLogin).toHaveBeenCalled();
       // Ensure that the navigation function is called with the correct path
       expect(mockNavigate).toHaveBeenCalledWith("/employee-dashboard");
     });
-    
+
     test("Then it should navigate to the HR dashboard", async () => {
       // Mock login function
       const mockLogin = jest.fn();
@@ -454,5 +454,98 @@ describe("Login container", () => {
     expect(mockLogin).toHaveBeenCalled();
     expect(mockNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills);
   });
-  
+});
+describe("When there is an error during employee login", () => {
+  test("It should handle the error appropriately", async () => {
+    // Simulate the login UI
+    document.body.innerHTML = LoginUI();
+
+    // Populate email and password fields
+    const emailInput = screen.getByTestId("employee-email-input");
+    fireEvent.change(emailInput, {
+      target: { value: "employee@example.com" },
+    });
+
+    const passwordInput = screen.getByTestId("employee-password-input");
+    fireEvent.change(passwordInput, { target: { value: "wrongpassword" } });
+
+    // Trigger form submission
+    const form = screen.getByTestId("form-employee");
+
+    // Mock the login function to simulate a login error
+    const mockLogin = jest.fn().mockRejectedValue(new Error("Login error"));
+
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname });
+    };
+
+    const login = new Login({
+      document,
+      localStorage: window.localStorage,
+      onNavigate,
+      store: jest.fn(),
+    });
+
+    login.login = mockLogin;
+
+    const handleSubmit = jest.fn(login.handleSubmitEmployee);
+    form.addEventListener("submit", handleSubmit);
+
+    // Trigger form submission
+    fireEvent.submit(form);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Assertions
+    expect(mockLogin).toHaveBeenCalled();
+    // Ensure that the error is handled appropriately
+    expect(login.error).toBeDefined();
+  });
+});
+describe("When there is a server error (500) during employee login", () => {
+  test("It should handle the server error appropriately", async () => {
+    // Simulate the login UI
+    document.body.innerHTML = LoginUI();
+
+    // Populate email and password fields
+    const emailInput = screen.getByTestId("employee-email-input");
+    fireEvent.change(emailInput, {
+      target: { value: "employee@example.com" },
+    });
+
+    const passwordInput = screen.getByTestId("employee-password-input");
+    fireEvent.change(passwordInput, { target: { value: "password123" } });
+
+    // Trigger form submission
+    const form = screen.getByTestId("form-employee");
+
+    // Mock the login function to simulate a server error (500)
+    const mockLogin = jest.fn().mockRejectedValue({ status: 500 });
+
+    const onNavigate = (pathname) => {
+      document.body.innerHTML = ROUTES({ pathname });
+    };
+
+    const login = new Login({
+      document,
+      localStorage: window.localStorage,
+      onNavigate,
+      store: jest.fn(),
+    });
+
+    login.login = mockLogin;
+
+    const handleSubmit = jest.fn(login.handleSubmitEmployee);
+    form.addEventListener("submit", handleSubmit);
+
+    // Trigger form submission
+    fireEvent.submit(form);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // Assertions
+    expect(mockLogin).toHaveBeenCalled();
+    // Ensure that the server error is handled appropriately
+    expect(login.error).toBeDefined();
+  });
 });
