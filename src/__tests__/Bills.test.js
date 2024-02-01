@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { screen, waitFor } from "@testing-library/dom";
+import { screen, waitFor, fireEvent } from "@testing-library/dom";
 import userEvent from "@testing-library/user-event";
 import BillsUI from "../views/BillsUI.js";
 import Bills from "../containers/Bills";
@@ -199,6 +199,32 @@ describe("Given I am connected as an employee", () => {
   });
 });
 describe("Bills container", () => {
+  test("handleClickIconEye should be called when clicking on the eye icon", () => {
+    // Setup
+    document.body.innerHTML = `
+            <div data-testid="icon-eye" data-bill-url="path/to/image.jpg"></div>
+        `;
+
+    const mockHandleClickIconEye = jest.fn();
+
+    // Initialize Bills container
+    const billsContainer = new Bills({
+      document: document,
+      onNavigate: jest.fn(),
+      store: null, // Mock du store si nécessaire
+      localStorage: null, // Mock de localStorage si nécessaire
+    });
+
+    billsContainer.handleClickIconEye = mockHandleClickIconEye;
+
+    // Trigger the handleClickIconEye method by clicking on the eye icon
+    const iconEye = document.querySelector('[data-testid="icon-eye"]');
+    iconEye.click();
+
+    // Assertion
+    expect(mockHandleClickIconEye).toHaveBeenCalled();
+  });
+
   // Testez la méthode handleClickNewBill
   describe("handleClickNewBill", () => {
     test("Should navigate to the New Bill page", () => {
@@ -217,6 +243,7 @@ describe("Bills container", () => {
       expect(onNavigateMock).toHaveBeenCalledWith(ROUTES_PATH["NewBill"]);
     });
   });
+  describe("handleClickIconEye", () => {});
   describe("getBills", () => {
     test("Should return an array of bills", async () => {
       // Mock de la méthode list pour retourner une liste de factures
@@ -242,6 +269,38 @@ describe("Bills container", () => {
 
       // Vérification que la méthode list du store a bien été appelée
       expect(mockList).toHaveBeenCalled();
+    });
+    test("Should return an empty array if store's list method fails", async () => {
+      const errorMessage = "Failed to fetch bills";
+      const mockList = jest.fn(() => Promise.reject(new Error(errorMessage)));
+      const mockStore = {
+        bills: jest.fn(() => ({
+          list: mockList,
+        })),
+      };
+
+      const billsInstance = new Bills({
+        document: document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: localStorageMock,
+      });
+
+      const result = await billsInstance.getBills();
+      expect(result).toEqual([]);
+    });
+    test("Should display an error message if store's list method fails with an unexpected error", async () => {
+      // Set up the document body with the error message
+      document.body.innerHTML = BillsUI({
+        error: "Unexpected error occurred while fetching bills",
+      });
+
+      // Wait for the error message to be rendered in the DOM
+      await waitFor(() => {
+        expect(
+          screen.getByText("Unexpected error occurred while fetching bills")
+        ).toBeInTheDocument();
+      });
     });
   });
 });
